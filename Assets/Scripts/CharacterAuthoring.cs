@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace DotsSurvivors
 {
-    public struct InitializeCharaterFlag : IComponentData, IEnableableComponent
+    public struct InitializeCharacterFlag : IComponentData, IEnableableComponent
     {
         
     }
@@ -44,7 +44,7 @@ namespace DotsSurvivors
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (mass, shouldInitialize) in SystemAPI.Query<RefRW<PhysicsMass>, EnabledRefRW<InitializeCharaterFlag>>())
+            foreach (var (mass, shouldInitialize) in SystemAPI.Query<RefRW<PhysicsMass>, EnabledRefRW<InitializeCharacterFlag>>())
             {
                 mass.ValueRW.InverseInertia = float3.zero;
                 shouldInitialize.ValueRW    = false;
