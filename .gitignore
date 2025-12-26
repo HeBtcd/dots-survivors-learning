@@ -99,4 +99,6 @@ InitTestScene*.unity*
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
 
 # Custom
-.*
+.idea/
+/[Aa]ssets/SceneDependencyCache/
+/[Aa]ssets/SceneDependencyCache.meta
