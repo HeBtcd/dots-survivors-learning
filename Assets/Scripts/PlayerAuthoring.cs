@@ -63,9 +63,9 @@ namespace DotsSurvivors
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (transform, cameraTarget) in SystemAPI.Query<LocalToWorld,CameraTarget>().WithAll<PlayerTag>().WithNone<InitializeCameraTargetTag>())
+            foreach (var (transform, cameraTarget) in SystemAPI.Query<RefRO<LocalToWorld>, RefRW<CameraTarget>>().WithAll<PlayerTag>().WithNone<InitializeCameraTargetTag>())
             {
-                cameraTarget.CameraTransform.Value.position = transform.Position;
+                cameraTarget.ValueRW.CameraTransform.Value.position = transform.ValueRO.Position;
             }
         }
     }
