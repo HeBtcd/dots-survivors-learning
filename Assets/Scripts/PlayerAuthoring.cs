@@ -1,10 +1,21 @@
 ﻿using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 
 namespace DotsSurvivors
 {
     public struct PlayerTag : IComponentData
+    {
+        
+    }
+
+    public struct CameraTarget : IComponentData
+    {
+        public UnityObjectRef<Transform> CameraTransform;
+    }
+
+    public struct InitializeCameraTargetTag : IComponentData
     {
         
     }
@@ -17,6 +28,44 @@ namespace DotsSurvivors
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent<PlayerTag>(entity);
+                AddComponent<InitializeCameraTargetTag>(entity);
+                AddComponent<CameraTarget>(entity);
+            }
+        }
+    }
+
+    [UpdateInGroup(typeof(InitializationSystemGroup))]
+    public partial struct CameraInitializationSystem : ISystem
+    {
+        public void OnCreate(ref SystemState state)
+        {
+            state.RequireForUpdate<InitializeCameraTargetTag>();
+        }
+
+        public void OnUpdate(ref SystemState state)
+        {
+            if (!CameraTargetSingleton.Instance) return;
+            var cameraTargetTransform = CameraTargetSingleton.Instance.transform;
+
+            var ecb = new EntityCommandBuffer(state.WorldUpdateAllocator);
+            foreach (var (cameraTarget, entity) in SystemAPI.Query<RefRW<CameraTarget>>().WithAll<InitializeCameraTargetTag, PlayerTag>().WithEntityAccess())
+            {
+                cameraTarget.ValueRW.CameraTransform = cameraTargetTransform;
+                ecb.RemoveComponent<InitializeCameraTargetTag>(entity);
+            }
+            
+            ecb.Playback(state.EntityManager);
+        }
+    }
+
+    [UpdateAfter(typeof(TransformSystemGroup))]
+    public partial struct MoveCameraSystem : ISystem
+    {
+        public void OnUpdate(ref SystemState state)
+        {
+            foreach (var (transform, cameraTarget) in SystemAPI.Query<LocalToWorld,CameraTarget>().WithAll<PlayerTag>().WithNone<InitializeCameraTargetTag>())
+            {
+                cameraTarget.CameraTransform.Value.position = transform.Position;
             }
         }
     }
