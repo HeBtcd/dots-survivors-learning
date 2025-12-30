@@ -37,10 +37,16 @@ namespace DotsSurvivors
         public int Value;
     }
 
+    public struct DamageThisFrame : IBufferElementData
+    {
+        public int Value;
+    }
+
     public class CharacterAuthoring : MonoBehaviour
     {
         public float moveSpeed;
         public int hitPoints;
+        
         private class Baker : Baker<CharacterAuthoring>
         {
             public override void Bake(CharacterAuthoring authoring)
@@ -67,6 +73,8 @@ namespace DotsSurvivors
                     {
                         Value = authoring.hitPoints
                     });
+                
+                AddBuffer<DamageThisFrame>(entity);
             }
         }
     }
@@ -123,6 +131,23 @@ namespace DotsSurvivors
         {
             var deltaTime = SystemAPI.Time.DeltaTime;
             Shader.SetGlobalFloat(_globalTimeShaderPropertyId, deltaTime);
+        }
+    }
+
+    public partial struct ProcessDamageThisFrameSystem : ISystem
+    {
+        public void OnUpdate(ref SystemState state)
+        {
+            foreach (var (hitPoints, damageThisFrame) in SystemAPI.Query<RefRW<CharacterCurrentHitPoints>, DynamicBuffer<DamageThisFrame>>())
+            {
+                if (damageThisFrame.IsEmpty) continue;
+                
+                foreach (var damage in damageThisFrame)
+                {
+                    hitPoints.ValueRW.Value -= damage.Value;
+                }
+                damageThisFrame.Clear();
+            }
         }
     }
 }
