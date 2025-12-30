@@ -46,7 +46,7 @@ namespace DotsSurvivors
     {
         public float moveSpeed;
         public int hitPoints;
-        
+
         private class Baker : Baker<CharacterAuthoring>
         {
             public override void Bake(CharacterAuthoring authoring)
@@ -73,7 +73,9 @@ namespace DotsSurvivors
                     {
                         Value = authoring.hitPoints
                     });
-                
+                AddComponent<DestroyEntityFlag>(entity);
+                SetComponentEnabled<DestroyEntityFlag>(entity, false);
+
                 AddBuffer<DamageThisFrame>(entity);
             }
         }
@@ -100,18 +102,23 @@ namespace DotsSurvivors
         public void OnUpdate(ref SystemState state)
         {
             var deltaTime = SystemAPI.Time.DeltaTime;
-            foreach (var (velocity, facingDirection, direction, speed, entity) 
-                     in SystemAPI.Query<RefRW<PhysicsVelocity>, RefRW<FacingDirectionOverride>, RefRO<CharacterMoveDirection>, RefRO<CharacterMoveSpeed>>().WithEntityAccess())
+            foreach (var (velocity, facingDirection, direction, speed, entity)
+                     in SystemAPI
+                         .Query<RefRW<PhysicsVelocity>, RefRW<FacingDirectionOverride>, RefRO<CharacterMoveDirection>,
+                             RefRO<CharacterMoveSpeed>>()
+                         .WithEntityAccess())
             {
                 var moveStep2d = direction.ValueRO.Value * speed.ValueRO.Value * deltaTime;
                 velocity.ValueRW.Linear = new float3(moveStep2d, 0f);
-                
+
                 if (math.abs(moveStep2d.x) > 0.001f) facingDirection.ValueRW.Value = math.sign(moveStep2d.x);
 
                 if (SystemAPI.HasComponent<PlayerTag>(entity))
                 {
                     var animationOverride = SystemAPI.GetComponentRW<AnimationIndexOverride>(entity);
-                    var animationType     = math.lengthsq(moveStep2d) > float.Epsilon ? PlayerAnimationIndex.Movement : PlayerAnimationIndex.Idle;
+                    var animationType = math.lengthsq(moveStep2d) > float.Epsilon
+                        ? PlayerAnimationIndex.Movement
+                        : PlayerAnimationIndex.Idle;
                     animationOverride.ValueRW.Value = (float)animationType;
                 }
             }
@@ -138,15 +145,22 @@ namespace DotsSurvivors
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (hitPoints, damageThisFrame) in SystemAPI.Query<RefRW<CharacterCurrentHitPoints>, DynamicBuffer<DamageThisFrame>>())
+            foreach (var (hitPoints, damageThisFrame, entity)
+                     in SystemAPI.Query<RefRW<CharacterCurrentHitPoints>, DynamicBuffer<DamageThisFrame>>().WithEntityAccess())
             {
                 if (damageThisFrame.IsEmpty) continue;
-                
+
                 foreach (var damage in damageThisFrame)
                 {
                     hitPoints.ValueRW.Value -= damage.Value;
                 }
+
                 damageThisFrame.Clear();
+
+                if (hitPoints.ValueRO.Value <= 0)
+                {
+                    SystemAPI.SetComponentEnabled<DestroyEntityFlag>(entity, true);
+                }
             }
         }
     }

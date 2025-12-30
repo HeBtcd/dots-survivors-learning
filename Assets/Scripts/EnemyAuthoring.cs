@@ -19,6 +19,9 @@ namespace DotsSurvivors
         public float CooldownTime;
     }
 
+    /// <summary>
+    /// true 表示正在冷却, false 表示冷却结束.
+    /// </summary>
     public struct EnemyCooldownExpirationTimestamp : IComponentData, IEnableableComponent
     {
         public double Value;
@@ -36,7 +39,7 @@ namespace DotsSurvivors
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent<EnemyTag>(entity);
-                AddComponent<EnemyAttackData>(entity,
+                AddComponent(entity,
                     new EnemyAttackData
                     {
                         HitPoints    = authoring.hitPoints,
@@ -86,6 +89,11 @@ namespace DotsSurvivors
     [UpdateBefore(typeof(AfterPhysicsSystemGroup))]
     public partial struct EnemyAttackSystem : ISystem
     {
+        public void OnCreate(ref SystemState state)
+        {
+            state.RequireForUpdate<SimulationSingleton>();
+        }
+
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
