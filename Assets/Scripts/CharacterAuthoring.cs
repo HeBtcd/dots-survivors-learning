@@ -146,7 +146,9 @@ namespace DotsSurvivors
         public void OnUpdate(ref SystemState state)
         {
             foreach (var (hitPoints, damageThisFrame, entity)
-                     in SystemAPI.Query<RefRW<CharacterCurrentHitPoints>, DynamicBuffer<DamageThisFrame>>().WithEntityAccess())
+                     in SystemAPI.Query<RefRW<CharacterCurrentHitPoints>, DynamicBuffer<DamageThisFrame>>()
+                         .WithPresent<DestroyEntityFlag>()
+                         .WithEntityAccess())
             {
                 if (damageThisFrame.IsEmpty) continue;
 
