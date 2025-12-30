@@ -282,7 +282,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 4
-  hitPoints: 0
+  hitPoints: 100
 --- !u!1 &1517494523
 GameObject:
   m_ObjectHideFlags: 0
@@ -505,7 +505,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 2
-  hitPoints: 0
+  hitPoints: 10
 --- !u!54 &1659822108
 Rigidbody:
   m_ObjectHideFlags: 0

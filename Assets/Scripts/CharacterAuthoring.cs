@@ -27,10 +27,20 @@ namespace DotsSurvivors
         public float Value;
     }
 
+    public struct CharacterMaxHitPoints : IComponentData
+    {
+        public int Value;
+    }
+
+    public struct CharacterCurrentHitPoints : IComponentData
+    {
+        public int Value;
+    }
+
     public class CharacterAuthoring : MonoBehaviour
     {
         public float moveSpeed;
-
+        public int hitPoints;
         private class Baker : Baker<CharacterAuthoring>
         {
             public override void Bake(CharacterAuthoring authoring)
@@ -46,6 +56,16 @@ namespace DotsSurvivors
                     new FacingDirectionOverride
                     {
                         Value = 1f
+                    });
+                AddComponent(entity,
+                    new CharacterMaxHitPoints
+                    {
+                        Value = authoring.hitPoints
+                    });
+                AddComponent(entity,
+                    new CharacterCurrentHitPoints
+                    {
+                        Value = authoring.hitPoints
                     });
             }
         }
