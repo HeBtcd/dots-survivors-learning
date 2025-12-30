@@ -1,5 +1,7 @@
-﻿using Unity.Entities;
+﻿using Unity.Collections;
+using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Physics;
 using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
@@ -39,6 +41,8 @@ namespace TMG.Survivors
     {
         public Entity AttackPrefab;
         public float CooldownTime;
+        public float3 DetectionSize;
+        public CollisionFilter CollisionFilter;
     }
 
     public struct PlayerCooldownExpirationTimestamp : IComponentData
@@ -50,6 +54,7 @@ namespace TMG.Survivors
     {
         public GameObject attackPrefab;
         public float cooldownTime;
+        public float3 detectionSize;
         
         private class Baker : Baker<PlayerAuthoring>
         {
@@ -60,10 +65,22 @@ namespace TMG.Survivors
                 AddComponent<InitializeCameraTargetTag>(entity);
                 AddComponent<CameraTarget>(entity);
                 AddComponent<AnimationIndexOverride>(entity);
+                
+                var enemyLayer     = LayerMask.NameToLayer("Enemy");
+                var enemyLayerMask = (uint)math.pow(2, enemyLayer);
+                
+                var attackCollisionFilter = new CollisionFilter
+                {
+                    BelongsTo = ~0u,
+                    CollidesWith = enemyLayerMask,
+                };
+                
                 AddComponent(entity , new PlayerAttackData
                 {
                     AttackPrefab = GetEntity(authoring.attackPrefab, TransformUsageFlags.Dynamic),
-                    CooldownTime = authoring.cooldownTime
+                    CooldownTime = authoring.cooldownTime,
+                    DetectionSize = new float3(authoring.detectionSize),
+                    CollisionFilter = attackCollisionFilter
                 });
                 AddComponent<PlayerCooldownExpirationTimestamp>(entity);
             }
@@ -130,6 +147,7 @@ namespace TMG.Survivors
     {
         public void OnCreate(ref SystemState state)
         {
+            state.RequireForUpdate<PhysicsWorldSingleton>();
             state.RequireForUpdate<BeginInitializationEntityCommandBufferSystem.Singleton>();
         }
 
@@ -138,14 +156,51 @@ namespace TMG.Survivors
             var elapsedTime = SystemAPI.Time.ElapsedTime;
 
             var ecb = SystemAPI.GetSingleton<BeginInitializationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
+            var physicsWorldSingleton = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
             foreach (var (expirationTimestamp, attackData, transform) 
                      in SystemAPI.Query<RefRW<PlayerCooldownExpirationTimestamp>, RefRO<PlayerAttackData>, RefRO<LocalTransform>>())
             {
                 if (expirationTimestamp.ValueRO.Value > elapsedTime) continue;
                 
-                var spawnPosition = transform.ValueRO.Position;
-                var newAttack = ecb.Instantiate(attackData.ValueRO.AttackPrefab);
-                ecb.SetComponent(newAttack, LocalTransform.FromPosition(spawnPosition));
+                var spawnPosition        = transform.ValueRO.Position;
+                var minDetectionPosition = spawnPosition - attackData.ValueRO.DetectionSize;
+                var maxDetectionPosition = spawnPosition + attackData.ValueRO.DetectionSize;
+
+                var aabbInput = new OverlapAabbInput
+                {
+                    Aabb = new Aabb
+                    {
+                        Min = minDetectionPosition,
+                        Max = maxDetectionPosition
+                    },
+                    Filter = attackData.ValueRO.CollisionFilter,
+                };
+
+                var overlapHits = new NativeList<int>(state.WorldUpdateAllocator);
+                if (!physicsWorldSingleton.OverlapAabb(aabbInput, ref overlapHits))
+                {
+                    continue;
+                }
+
+                var maxDistanceSq        = float.MaxValue;
+                var closestEnemyPosition = float3.zero;
+                foreach (var overlapHit in overlapHits)
+                {
+                    var curEnemyPosition = physicsWorldSingleton.Bodies[overlapHit].WorldFromBody.pos;
+                    var distanceToPlayerSq = math.distancesq(spawnPosition.xy, curEnemyPosition.xy);
+                    if (distanceToPlayerSq < maxDistanceSq)
+                    {
+                        maxDistanceSq        = distanceToPlayerSq;
+                        closestEnemyPosition = curEnemyPosition;
+                    }
+                }
+
+                var vectorToClosestEnemy = closestEnemyPosition - spawnPosition;
+                var angleToClosestEnemy  = math.atan2(vectorToClosestEnemy.y, vectorToClosestEnemy.x);
+                var spawnOrientation     = quaternion.Euler(0f, 0f, angleToClosestEnemy);
+                
+                var newAttack   = ecb.Instantiate(attackData.ValueRO.AttackPrefab);
+                ecb.SetComponent(newAttack, LocalTransform.FromPositionRotation(spawnPosition, spawnOrientation));
                 
                 expirationTimestamp.ValueRW.Value = elapsedTime + attackData.ValueRO.CooldownTime;
             }
