@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace DotsSurvivors
+namespace TMG.Survivors
 {
     public class CameraTargetSingleton : MonoBehaviour
     {

@@ -5,7 +5,7 @@ using Unity.Physics;
 using Unity.Rendering;
 using UnityEngine;
 
-namespace DotsSurvivors
+namespace TMG.Survivors
 {
     public struct InitializeCharacterFlag : IComponentData, IEnableableComponent
     {

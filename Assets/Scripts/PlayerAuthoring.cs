@@ -4,7 +4,7 @@ using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
 
-namespace DotsSurvivors
+namespace TMG.Survivors
 {
     public struct PlayerTag : IComponentData
     {

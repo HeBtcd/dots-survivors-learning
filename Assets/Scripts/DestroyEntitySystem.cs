@@ -1,7 +1,7 @@
 ﻿using Unity.Burst;
 using Unity.Entities;
 
-namespace DotsSurvivors
+namespace TMG.Survivors
 {
     public struct DestroyEntityFlag : IComponentData, IEnableableComponent
     {
