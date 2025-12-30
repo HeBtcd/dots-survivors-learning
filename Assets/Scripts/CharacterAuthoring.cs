@@ -99,7 +99,6 @@ namespace DotsSurvivors
             _globalTimeShaderPropertyId = Shader.PropertyToID("_GlobalTime");
         }
 
-        [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             var deltaTime = SystemAPI.Time.DeltaTime;
