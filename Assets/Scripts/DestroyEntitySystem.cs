@@ -25,6 +25,11 @@ namespace DotsSurvivors
             
             foreach (var (_, entity) in SystemAPI.Query<RefRO<DestroyEntityFlag>>().WithEntityAccess())
             {
+                if (SystemAPI.HasComponent<PlayerTag>(entity))
+                {
+                    GameUIController.Instance.ShowGameOverUI();
+                }
+                
                 endEcb.DestroyEntity(entity);
             }
         }
