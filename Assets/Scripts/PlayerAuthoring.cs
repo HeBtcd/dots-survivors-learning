@@ -34,9 +34,23 @@ namespace TMG.Survivors
         
         None = byte.MaxValue
     }
+
+    public struct PlayerAttackData : IComponentData
+    {
+        public Entity AttackPrefab;
+        public float CooldownTime;
+    }
+
+    public struct PlayerCooldownExpirationTimestamp : IComponentData
+    {
+        public double Value;
+    }
     
     public class PlayerAuthoring : MonoBehaviour
     {
+        public GameObject attackPrefab;
+        public float cooldownTime;
+        
         private class Baker : Baker<PlayerAuthoring>
         {
             public override void Bake(PlayerAuthoring authoring)
@@ -46,6 +60,12 @@ namespace TMG.Survivors
                 AddComponent<InitializeCameraTargetTag>(entity);
                 AddComponent<CameraTarget>(entity);
                 AddComponent<AnimationIndexOverride>(entity);
+                AddComponent(entity , new PlayerAttackData
+                {
+                    AttackPrefab = GetEntity(authoring.attackPrefab, TransformUsageFlags.Dynamic),
+                    CooldownTime = authoring.cooldownTime
+                });
+                AddComponent<PlayerCooldownExpirationTimestamp>(entity);
             }
         }
     }
@@ -102,6 +122,32 @@ namespace TMG.Survivors
             foreach (var direction in SystemAPI.Query<RefRW<CharacterMoveDirection>>().WithAll<PlayerTag>())
             {
                 direction.ValueRW.Value = currentInput;
+            }
+        }
+    }
+
+    public partial struct PlayerAttackSystem : ISystem
+    {
+        public void OnCreate(ref SystemState state)
+        {
+            state.RequireForUpdate<BeginInitializationEntityCommandBufferSystem.Singleton>();
+        }
+
+        public void OnUpdate(ref SystemState state)
+        {
+            var elapsedTime = SystemAPI.Time.ElapsedTime;
+
+            var ecb = SystemAPI.GetSingleton<BeginInitializationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
+            foreach (var (expirationTimestamp, attackData, transform) 
+                     in SystemAPI.Query<RefRW<PlayerCooldownExpirationTimestamp>, RefRO<PlayerAttackData>, RefRO<LocalTransform>>())
+            {
+                if (expirationTimestamp.ValueRO.Value > elapsedTime) continue;
+                
+                var spawnPosition = transform.ValueRO.Position;
+                var newAttack = ecb.Instantiate(attackData.ValueRO.AttackPrefab);
+                ecb.SetComponent(newAttack, LocalTransform.FromPosition(spawnPosition));
+                
+                expirationTimestamp.ValueRW.Value = elapsedTime + attackData.ValueRO.CooldownTime;
             }
         }
     }
