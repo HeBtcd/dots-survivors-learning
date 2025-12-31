@@ -5,6 +5,7 @@ using Unity.Physics;
 using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace TMG.Survivors
 {
@@ -59,12 +60,24 @@ namespace TMG.Survivors
     {
         
     }
+
+    public struct PlayerWorldUi : ICleanupComponentData
+    {
+        public UnityObjectRef<Transform> CanvasTransform;
+        public UnityObjectRef<Slider> HealthBarSlider;
+    }
+
+    public struct PlayerWorldUiPrefab : IComponentData
+    {
+        public UnityObjectRef<GameObject> Value;
+    }
     
     public class PlayerAuthoring : MonoBehaviour
     {
         public GameObject attackPrefab;
         public float cooldownTime;
         public float3 detectionSize;
+        public GameObject worldUiPrefab;
         
         private class Baker : Baker<PlayerAuthoring>
         {
@@ -95,6 +108,10 @@ namespace TMG.Survivors
                 AddComponent<PlayerCooldownExpirationTimestamp>(entity);
                 AddComponent<GemsCollectedCount>(entity);
                 AddComponent<UpdateGemUiFlag>(entity);
+                AddComponent(entity, new PlayerWorldUiPrefab
+                {
+                    Value = authoring.worldUiPrefab,
+                });
             }
         }
     }
@@ -229,6 +246,44 @@ namespace TMG.Survivors
                 GameUIController.Instance.UpdateGemsCollectedText(gemCount.ValueRO.Value);
                 shouldUpdateUi.ValueRW = false;
             }
+        }
+    }
+    
+    public partial struct PlayerWorldUiSystem : ISystem
+    {
+        public void OnUpdate(ref SystemState state)
+        {
+            var ecb = new EntityCommandBuffer(state.WorldUpdateAllocator);
+            foreach (var (uiPrefab, entity) 
+                     in SystemAPI.Query<RefRO<PlayerWorldUiPrefab>>().WithNone<PlayerWorldUi>().WithEntityAccess())
+            {
+                var newWorldUi = Object.Instantiate(uiPrefab.ValueRO.Value.Value);
+                ecb.AddComponent(entity, new PlayerWorldUi
+                {
+                    CanvasTransform = newWorldUi.transform,
+                    HealthBarSlider = newWorldUi.GetComponentInChildren<Slider>()
+                });
+            }
+
+            foreach (var (transform, worldUi, currentHitPoints, maxHitPoints) 
+                     in SystemAPI.Query<RefRO<LocalToWorld>, RefRW<PlayerWorldUi>, RefRO<CharacterCurrentHitPoints>, RefRO<CharacterMaxHitPoints>>())
+            {
+                worldUi.ValueRW.CanvasTransform.Value.position = transform.ValueRO.Position;
+                var healthValue = (float)currentHitPoints.ValueRO.Value / maxHitPoints.ValueRO.Value;
+                worldUi.ValueRW.HealthBarSlider.Value.value = healthValue;
+            }
+
+            foreach (var (worldUi, entity) in SystemAPI.Query<RefRO<PlayerWorldUi>>().WithNone<LocalToWorld>().WithEntityAccess())
+            {
+                if (worldUi.ValueRO.CanvasTransform != null)
+                {
+                    Object.Destroy(worldUi.ValueRO.CanvasTransform.Value.gameObject);
+                }
+                
+                ecb.RemoveComponent<PlayerWorldUi>(entity);
+            }
+            
+            ecb.Playback(state.EntityManager);
         }
     }
 }
