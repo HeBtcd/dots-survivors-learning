@@ -1,4 +1,5 @@
-﻿using Unity.Collections;
+﻿using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Physics;
 using UnityEngine;
@@ -31,6 +32,7 @@ namespace TMG.Survivors
             state.RequireForUpdate<GemTag>();
         }
 
+        [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             var collectGemJob = new CollectGemJob
@@ -45,6 +47,7 @@ namespace TMG.Survivors
         }
     }
 
+    [BurstCompile]
     public struct CollectGemJob : ITriggerEventsJob
     {
         [ReadOnly] public ComponentLookup<GemTag> GemLookup;
