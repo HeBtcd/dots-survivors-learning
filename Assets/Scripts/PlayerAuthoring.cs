@@ -88,6 +88,7 @@ namespace TMG.Survivors
                     CollisionFilter = attackCollisionFilter
                 });
                 AddComponent<PlayerCooldownExpirationTimestamp>(entity);
+                AddComponent<GemCollectedCount>(entity);
             }
         }
     }
