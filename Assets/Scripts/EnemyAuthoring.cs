@@ -91,7 +91,7 @@ namespace TMG.Survivors
         private void Execute(ref CharacterMoveDirection direction, in LocalTransform transform)
         {
             var vectorToPlayer = PlayerPosition - transform.Position.xy;
-            direction.Value = math.normalize(vectorToPlayer);
+            direction.Value = math.normalizesafe(vectorToPlayer);
         }
     }
 

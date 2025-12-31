@@ -80,10 +80,7 @@ namespace TMG.Survivors
                 spawnPoint *= spawnData.ValueRO.SpawnDistance;
                 spawnPoint += playerPosition;
                 
-                ecb.AddComponent(newEnemy, new LocalTransform
-                {
-                    Position = new float3(spawnPoint, 0f)
-                });
+                ecb.SetComponent(newEnemy, LocalTransform.FromPosition(new float3(spawnPoint, 0f)));
             }
         }
     }

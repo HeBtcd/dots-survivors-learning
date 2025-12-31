@@ -76,7 +76,7 @@ namespace TMG.Survivors
     {
         public GameObject attackPrefab;
         public float cooldownTime;
-        public float3 detectionSize;
+        public float detectionSize;
         public GameObject worldUiPrefab;
         
         private class Baker : Baker<PlayerAuthoring>

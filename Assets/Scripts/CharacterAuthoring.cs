@@ -52,6 +52,7 @@ namespace TMG.Survivors
             public override void Bake(CharacterAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
+                AddComponent<InitializeCharacterFlag>(entity);
                 AddComponent<CharacterMoveDirection>(entity);
                 AddComponent(entity,
                     new CharacterMoveSpeed
@@ -101,17 +102,15 @@ namespace TMG.Survivors
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            var deltaTime = SystemAPI.Time.DeltaTime;
             foreach (var (velocity, facingDirection, direction, speed, entity)
                      in SystemAPI
-                         .Query<RefRW<PhysicsVelocity>, RefRW<FacingDirectionOverride>, RefRO<CharacterMoveDirection>,
-                             RefRO<CharacterMoveSpeed>>()
+                         .Query<RefRW<PhysicsVelocity>, RefRW<FacingDirectionOverride>, RefRO<CharacterMoveDirection>, RefRO<CharacterMoveSpeed>>()
                          .WithEntityAccess())
             {
-                var moveStep2d = direction.ValueRO.Value * speed.ValueRO.Value * deltaTime;
+                var moveStep2d = direction.ValueRO.Value * speed.ValueRO.Value;
                 velocity.ValueRW.Linear = new float3(moveStep2d, 0f);
 
-                if (math.abs(moveStep2d.x) > 0.001f) facingDirection.ValueRW.Value = math.sign(moveStep2d.x);
+                if (math.abs(moveStep2d.x) > 0.15f) facingDirection.ValueRW.Value = math.sign(moveStep2d.x);
 
                 if (SystemAPI.HasComponent<PlayerTag>(entity))
                 {
@@ -136,8 +135,7 @@ namespace TMG.Survivors
 
         public void OnUpdate(ref SystemState state)
         {
-            var deltaTime = SystemAPI.Time.DeltaTime;
-            Shader.SetGlobalFloat(_globalTimeShaderPropertyId, deltaTime);
+            Shader.SetGlobalFloat(_globalTimeShaderPropertyId, (float)SystemAPI.Time.ElapsedTime);
         }
     }
 

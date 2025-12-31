@@ -18,7 +18,6 @@ namespace TMG.Survivors
             state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
         }
 
-        [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             var endEcb = SystemAPI
@@ -34,14 +33,13 @@ namespace TMG.Survivors
                 {
                     GameUIController.Instance.ShowGameOverUI();
                 }
-
+                
                 if (SystemAPI.HasComponent<GemPrefab>(entity))
                 {
                     var gemPrefab = SystemAPI.GetComponentRW<GemPrefab>(entity).ValueRW.Value;
-                    beginEcb.Instantiate(gemPrefab);
-
+                    var newGemEntity = beginEcb.Instantiate(gemPrefab); 
                     var spawnPosition = SystemAPI.GetComponent<LocalToWorld>(entity).Position;
-                    beginEcb.SetComponent(entity, LocalTransform.FromPosition(spawnPosition));
+                    beginEcb.SetComponent(newGemEntity, LocalTransform.FromPosition(spawnPosition));
                 }
 
                 endEcb.DestroyEntity(entity);
