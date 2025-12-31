@@ -27,11 +27,18 @@ namespace TMG.Survivors
         public double Value;
     }
 
+    public struct GemPrefab : IComponentData
+    {
+        public Entity Value;
+    }
+
     [RequireComponent(typeof(CharacterAuthoring))]
     public class EnemyAuthoring : MonoBehaviour
     {
         public int hitPoints;
         public float cooldownTime;
+        
+        public GameObject gemPrefab;
 
         private class Baker : Baker<EnemyAuthoring>
         {
@@ -47,6 +54,10 @@ namespace TMG.Survivors
                     });
                 AddComponent<EnemyCooldownExpirationTimestamp>(entity);
                 SetComponentEnabled<EnemyCooldownExpirationTimestamp>(entity, false);
+                AddComponent<GemPrefab>(entity, new GemPrefab
+                {
+                    Value = GetEntity(authoring.gemPrefab, TransformUsageFlags.Dynamic),
+                });
             }
         }
     }

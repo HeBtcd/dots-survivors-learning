@@ -166,3 +166,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hitPoints: 4
   cooldownTime: 1
+  gemPrefab: {fileID: 9220775156046223290, guid: 37f234ecd3fecc643aaa9af6cfe25a36, type: 3}
