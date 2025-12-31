@@ -50,9 +50,14 @@ namespace TMG.Survivors
         public double Value;
     }
 
-    public struct GemCollectedCount : IComponentData
+    public struct GemsCollectedCount : IComponentData
     {
         public int Value;
+    }
+
+    public struct UpdateGemUiFlag : IComponentData, IEnableableComponent
+    {
+        
     }
     
     public class PlayerAuthoring : MonoBehaviour
@@ -88,7 +93,8 @@ namespace TMG.Survivors
                     CollisionFilter = attackCollisionFilter
                 });
                 AddComponent<PlayerCooldownExpirationTimestamp>(entity);
-                AddComponent<GemCollectedCount>(entity);
+                AddComponent<GemsCollectedCount>(entity);
+                AddComponent<UpdateGemUiFlag>(entity);
             }
         }
     }
@@ -209,6 +215,19 @@ namespace TMG.Survivors
                 ecb.SetComponent(newAttack, LocalTransform.FromPositionRotation(spawnPosition, spawnOrientation));
                 
                 expirationTimestamp.ValueRW.Value = elapsedTime + attackData.ValueRO.CooldownTime;
+            }
+        }
+    }
+
+    public partial struct UpdateGemUiSystem : ISystem
+    {
+        public void OnUpdate(ref SystemState state)
+        { 
+            foreach (var (gemCount, shouldUpdateUi) 
+                     in SystemAPI.Query<RefRO<GemsCollectedCount>, EnabledRefRW<UpdateGemUiFlag>>())
+            {
+                GameUIController.Instance.UpdateGemsCollectedText(gemCount.ValueRO.Value);
+                shouldUpdateUi.ValueRW = false;
             }
         }
     }

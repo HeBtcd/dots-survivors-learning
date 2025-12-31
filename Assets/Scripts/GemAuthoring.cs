@@ -38,8 +38,9 @@ namespace TMG.Survivors
             var collectGemJob = new CollectGemJob
             {
                 GemLookup           = SystemAPI.GetComponentLookup<GemTag>(true),
-                GemsCollectedLookup = SystemAPI.GetComponentLookup<GemCollectedCount>(),
-                DestroyEntityLookup = SystemAPI.GetComponentLookup<DestroyEntityFlag>()
+                GemsCollectedLookup = SystemAPI.GetComponentLookup<GemsCollectedCount>(),
+                DestroyEntityLookup = SystemAPI.GetComponentLookup<DestroyEntityFlag>(),
+                UpdateGemUiLookup   = SystemAPI.GetComponentLookup<UpdateGemUiFlag>(),
             };
             
             var simulationSingleton = SystemAPI.GetSingleton<SimulationSingleton>(); 
@@ -51,8 +52,9 @@ namespace TMG.Survivors
     public struct CollectGemJob : ITriggerEventsJob
     {
         [ReadOnly] public ComponentLookup<GemTag> GemLookup;
-        public ComponentLookup<GemCollectedCount> GemsCollectedLookup;
+        public ComponentLookup<GemsCollectedCount> GemsCollectedLookup;
         public ComponentLookup<DestroyEntityFlag> DestroyEntityLookup;
+        public ComponentLookup<UpdateGemUiFlag> UpdateGemUiLookup;
 
         public void Execute(TriggerEvent triggerEvent)
         {
@@ -79,6 +81,8 @@ namespace TMG.Survivors
             var gemsCollected = GemsCollectedLookup[playerEntity];
             gemsCollected.Value++;
             GemsCollectedLookup[playerEntity] = gemsCollected;
+            
+            UpdateGemUiLookup.SetComponentEnabled(playerEntity, true);
             
             DestroyEntityLookup.SetComponentEnabled(gemEntity, true);
         }
