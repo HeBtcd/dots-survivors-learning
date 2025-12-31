@@ -49,6 +49,11 @@ namespace TMG.Survivors
     {
         public double Value;
     }
+
+    public struct GemCollectedCount : IComponentData
+    {
+        public int Value;
+    }
     
     public class PlayerAuthoring : MonoBehaviour
     {
